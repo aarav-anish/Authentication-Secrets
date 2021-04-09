@@ -39,7 +39,8 @@ const userSchema = new mongoose.Schema({
     username: String,
     password: String,
     googleId: String,
-    facebookId: String
+    facebookId: String,
+    secrets: [String]
 });
 
 userSchema.plugin(passportLocalMongoose);
@@ -67,7 +68,7 @@ passport.use(new GoogleStrategy({
     callbackURL: "http://localhost:3000/auth/google/secrets"
   },
   function(accessToken, refreshToken, profile, cb) {
-    console.log(profile);
+    // console.log(profile);
 
     User.findOrCreate({username: profile.displayName, googleId: profile.id }, function (err, user) {
       return cb(err, user);
@@ -83,7 +84,7 @@ passport.use(new FacebookStrategy({
     callbackURL: "http://localhost:3000/auth/facebook/secrets"
   },
   function(accessToken, refreshToken, profile, cb) {
-    console.log(profile);
+    // console.log(profile);
 
     User.findOrCreate({username: profile.displayName, facebookId: profile.id }, function (err, user) {
       return cb(err, user);
@@ -123,12 +124,15 @@ app.get("/auth/facebook/secrets",
 //////////////////// Secrets //////////////////////
 
 app.get("/secrets", function(req, res) {
-    if(req.isAuthenticated()) {
-        res.render("secrets");
-    }
-    else {
-        res.redirect("/login");
-    }
+    User.find({ secrets: { $ne: null } }, function(err, foundUsers) {
+        if(err)
+            console.log(err);
+        else {
+            if(foundUsers) {
+                res.render("secrets", {usersWithSecrets: foundUsers});
+            }
+        }
+    });
 })
 
 /////////////////// Register ///////////////////////
@@ -193,10 +197,30 @@ app.get("/logout", function(req, res) {
 app.route("/submit")
 
 .get(function(req, res) {
-    res.render("submit");
+    if(req.isAuthenticated()) {
+      res.render("submit");
+    }
+    else {
+      res.redirect("/login");
+  }
 })
 
+.post(function(req, res) {
+    const submittedSecret = req.body.secret;
 
+    User.findById(req.user.id, function(err, foundUser) {
+        if(err)
+            console.log(err);
+        else {
+            if(foundUser) {
+                foundUser.secrets.push(submittedSecret);
+                foundUser.save(function() {
+                    res.redirect("/secrets");
+                });
+            }
+        }
+    })
+})
 
 
 

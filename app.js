@@ -36,7 +36,7 @@ db.once("open", function() {
 });
 
 const userSchema = new mongoose.Schema({
-    username: String,
+    email: String,
     password: String,
     googleId: String,
     facebookId: String,
@@ -222,12 +222,8 @@ app.route("/submit")
     })
 })
 
-
-
 let port = process.env.PORT || 3000;
 
 app.listen(port, function(req, res) {
-    console.log("Server started running on " + port);
-    //console.log(`Serving on port ${port}`)
-
+    console.log(`Serving on port ${port}`)
 });
